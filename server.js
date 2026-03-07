@@ -47,11 +47,10 @@ const cors = require("cors");
 const { Pool } = require("pg");
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
-// Neon database connection
+// 🔴 Paste your Neon connection string here
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -68,7 +67,7 @@ app.get("/", (req, res) => {
   res.send("Server running ✅");
 });
 
-// Create table automatically
+// Create table automatically (first time only)
 pool.query(`
   CREATE TABLE IF NOT EXISTS admissions (
     id SERIAL PRIMARY KEY,
@@ -89,16 +88,14 @@ app.post("/api/admission", async (req, res) => {
       "INSERT INTO admissions (name, email, phone, message) VALUES ($1, $2, $3, $4)",
       [name, email, phone, message]
     );
-
-    res.status(200).json({ message: "Saved successfully ✅" });
-
+    res.status(200).json({ message: "Saved successfully" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Database error" });
   }
 });
 
-// GET admissions
+// GET admissions (for admin)
 app.get("/api/admissions", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM admissions ORDER BY id DESC");
@@ -108,9 +105,6 @@ app.get("/api/admissions", async (req, res) => {
   }
 });
 
-// 🔴 IMPORTANT CHANGE FOR RENDER
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(5000, () => {
+  console.log("Server running on port 5000");
 });
