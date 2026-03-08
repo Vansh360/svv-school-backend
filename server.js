@@ -90,9 +90,9 @@ app.post("/api/admission", async (req, res) => {
     );
     res.status(200).json({ message: "Saved successfully" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Database error" });
-  }
+  console.error("ERROR:", err);
+  res.status(500).json({ error: err.message });
+}
 });
 
 // GET admissions (for admin)
