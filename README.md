@@ -98,7 +98,7 @@ http://localhost:5000
 ## 🌐 Live Backend URL
 
 ```text
-https://your-backend-name.onrender.com
+https://svv-school-backend.onrender.com
 ```
 
 ---
