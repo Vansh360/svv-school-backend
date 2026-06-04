@@ -70,29 +70,40 @@ app.get("/", (req, res) => {
 // Create table automatically (first time only)
 pool.query(`
   CREATE TABLE IF NOT EXISTS admissions (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100),
-    email VARCHAR(100),
-    phone VARCHAR(20),
-    message TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )
+  id SERIAL PRIMARY KEY,
+  application_id VARCHAR(50),
+  name VARCHAR(100),
+  email VARCHAR(100),
+  phone VARCHAR(20),
+  stream VARCHAR(50),
+  message TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
 `);
 
 // POST admission
 app.post("/api/admission", async (req, res) => {
-  const { name, email, phone, message } = req.body;
+  const { name, email, phone, stream, message } = req.body;
+
+  const applicationId =
+    "ADM" + Math.floor(100000 + Math.random() * 900000);
 
   try {
     await pool.query(
-      "INSERT INTO admissions (name, email, phone, message) VALUES ($1, $2, $3, $4)",
-      [name, email, phone, message]
+      `INSERT INTO admissions
+       (application_id, name, email, phone, stream, message)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [applicationId, name, email, phone, stream, message]
     );
-    res.status(200).json({ message: "Saved successfully" });
+
+    res.status(200).json({
+      message: "Saved successfully",
+      applicationId,
+    });
   } catch (err) {
-  console.error("ERROR:", err);
-  res.status(500).json({ error: err.message });
-}
+    console.error("DB Error:", err);
+    res.status(500).json({ error: "Database error" });
+  }
 });
 
 // GET admissions (for admin)
