@@ -73,17 +73,43 @@ pool.query(`
   id SERIAL PRIMARY KEY,
   application_id VARCHAR(50),
   name VARCHAR(100),
+  gender VARCHAR(20),
+  dob DATE,
+  course VARCHAR(100),
   email VARCHAR(100),
   phone VARCHAR(20),
   stream VARCHAR(50),
+  address TEXT,
+  status VARCHAR(20),
   message TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 `);
 
+// Ensure existing table has the new columns
+pool.query(`
+  ALTER TABLE admissions
+    ADD COLUMN IF NOT EXISTS gender VARCHAR(20),
+    ADD COLUMN IF NOT EXISTS dob DATE,
+    ADD COLUMN IF NOT EXISTS course VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS address TEXT,
+    ADD COLUMN IF NOT EXISTS status VARCHAR(20);
+`);
+
 // POST admission
 app.post("/api/admission", async (req, res) => {
-  const { name, email, phone, stream, message } = req.body;
+  const {
+    name,
+    gender,
+    dob,
+    course,
+    stream,
+    phone,
+    email,
+    address,
+    status,
+    message
+  } = req.body;
 
   const applicationId =
     "ADM" + Math.floor(100000 + Math.random() * 900000);
@@ -91,9 +117,9 @@ app.post("/api/admission", async (req, res) => {
   try {
     await pool.query(
       `INSERT INTO admissions
-       (application_id, name, email, phone, stream, message)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [applicationId, name, email, phone, stream, message]
+       (application_id, name, gender, dob, course, email, phone, stream, address, status, message)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [applicationId, name, gender, dob, course, email, phone, stream, address, status, message]
     );
 
     res.status(200).json({
@@ -112,6 +138,21 @@ app.get("/api/admissions", async (req, res) => {
     const result = await pool.query("SELECT * FROM admissions ORDER BY id DESC");
     res.json(result.rows);
   } catch (err) {
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+// DELETE admission by id
+app.delete("/api/admissions/:id", async (req, res) => {
+  try {
+    await pool.query(
+      "DELETE FROM admissions WHERE id = $1",
+      [req.params.id]
+    );
+
+    res.json({ message: "Admission deleted successfully" });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Database error" });
   }
 });
