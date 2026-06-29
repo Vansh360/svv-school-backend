@@ -68,11 +68,21 @@ async function initDB() {
         id SERIAL PRIMARY KEY,
         roll_no VARCHAR(50) UNIQUE NOT NULL,
         student_name VARCHAR(200),
+        father_name VARCHAR(200),
+        gender VARCHAR(20),
+        dob DATE,
         class VARCHAR(50),
         stream VARCHAR(100),
         photo_url TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    await pool.query(`
+      ALTER TABLE students
+        ADD COLUMN IF NOT EXISTS father_name VARCHAR(200),
+        ADD COLUMN IF NOT EXISTS gender VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS dob DATE
     `);
 
     await pool.query(`
@@ -144,20 +154,42 @@ app.delete("/api/admissions/:id", async (req, res) => {
 
 // ── POST student (upsert) ──
 app.post("/api/students", async (req, res) => {
-  const { rollno, name, class: cls, stream, photo } = req.body;
+  const { rollno, name, father_name, gender, dob, class: cls, stream, photo } = req.body;
   if (!rollno || !name) return res.status(400).json({ error: "rollno and name are required" });
   try {
     await pool.query(
-      `INSERT INTO students (roll_no, student_name, class, stream, photo_url)
-       VALUES ($1,$2,$3,$4,$5)
+      `INSERT INTO students (roll_no, student_name, father_name, gender, dob, class, stream, photo_url)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
        ON CONFLICT (roll_no) DO UPDATE SET
          student_name = EXCLUDED.student_name,
+         father_name  = EXCLUDED.father_name,
+         gender       = EXCLUDED.gender,
+         dob          = EXCLUDED.dob,
          class        = EXCLUDED.class,
          stream       = EXCLUDED.stream,
          photo_url    = EXCLUDED.photo_url`,
-      [rollno, name, cls || null, stream || null, photo || null]
+      [rollno, name, father_name || null, gender || null, dob || null, cls || null, stream || null, photo || null]
     );
     res.json({ success: true });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+// ── GET student by roll number ──
+app.get("/api/students/:rollno", async (req, res) => {
+  const roll = req.params.rollno.trim();
+  try {
+    const result = await pool.query(
+      `SELECT roll_no AS roll_no, student_name AS student_name, father_name, gender, dob::text AS dob, class AS class_name, stream, photo_url
+       FROM students WHERE roll_no = $1`,
+      [roll]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+    res.json(result.rows[0]);
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ error: "Database error" });
@@ -257,5 +289,5 @@ app.get("/api/results/:rollno", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5137;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
